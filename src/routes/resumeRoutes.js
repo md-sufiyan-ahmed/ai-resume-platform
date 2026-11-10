@@ -14,19 +14,29 @@ const upload = multer({
         fileSize: 5 * 1024 * 1024
     },
 
+
     fileFilter: (req, file, cb) => {
+        console.log("Received MIME type:", file.mimetype);
+        console.log("Received filename:", file.originalname);
 
-        const allowedTypes = [
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        ];
 
-        if (allowedTypes.includes(file.mimetype)) {
+        const isPDF = file.mimetype === "application/pdf";
+
+        const isDOCX =
+            file.mimetype ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+            (
+                file.mimetype === "application/octet-stream" &&
+                file.originalname.toLowerCase().endsWith(".docx")
+            );
+
+        if (isPDF || isDOCX) {
             cb(null, true);
         } else {
             cb(new Error("Only PDF and DOCX files are allowed"));
         }
     }
+
 });
 
 router.post(

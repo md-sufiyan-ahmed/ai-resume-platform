@@ -1,6 +1,11 @@
+
 const {
     extractResumeText
 } = require("../services/resumeService");
+
+const {
+    analyzeResume
+} = require("../services/resumeAnalysisService");
 
 async function uploadResume(req, res) {
     try {
@@ -11,8 +16,7 @@ async function uploadResume(req, res) {
             });
         }
 
-        const extractedText =
-            await extractResumeText(req.file);
+        const extractedText = await extractResumeText(req.file);
 
         if (!extractedText || extractedText.trim().length === 0) {
             return res.status(400).json({
@@ -21,19 +25,36 @@ async function uploadResume(req, res) {
             });
         }
 
+        const analyzedResume = await analyzeResume(extractedText);
+
         return res.status(200).json({
             success: true,
-            message: "Resume uploaded and text extracted successfully",
+            message: "Resume uploaded, extracted and analyzed successfully",
             filename: req.file.originalname,
-            text: extractedText
+            text: extractedText,
+            resume: analyzedResume
         });
 
     } catch (error) {
         console.error("Resume processing error:", error);
 
+        if (error.status === 503) {
+            return res.status(503).json({
+                success: false,
+                message: "Resume analysis service is temporarily unavailable. Please try again later."
+            });
+        }
+
+        if (error.status === 429) {
+            return res.status(429).json({
+                success: false,
+                message: "Resume analysis rate limit exceeded. Please try again later."
+            });
+        }
+
         return res.status(500).json({
             success: false,
-            message: "Failed to process resume"
+            message: "Failed to process resume. Please try again."
         });
     }
 }
